@@ -1,0 +1,503 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.calc-wrap{font-family:var(--font-mono,monospace);max-width:520px;margin:1rem auto;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden;background:var(--color-background-primary)}
+.display-area{background:var(--color-background-secondary);padding:1rem 1.25rem;border-bottom:0.5px solid var(--color-border-tertiary)}
+.mode-row{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.mode-btn{font-size:11px;padding:3px 10px;border:0.5px solid var(--color-border-secondary);border-radius:20px;background:transparent;color:var(--color-text-secondary);cursor:pointer;font-family:var(--font-mono)}
+.mode-btn.active{background:var(--color-background-info);color:var(--color-text-info);border-color:var(--color-border-info)}
+.expr-line{font-size:12px;color:var(--color-text-secondary);min-height:16px;margin-bottom:4px;word-break:break-all}
+.result-line{font-size:28px;font-weight:500;color:var(--color-text-primary);text-align:right;min-height:36px;word-break:break-all}
+.unit-line{font-size:12px;color:var(--color-text-secondary);text-align:right;min-height:16px}
+.history-row{font-size:11px;color:var(--color-text-tertiary);margin-top:6px;min-height:14px;word-break:break-all}
+.tabs{display:flex;border-bottom:0.5px solid var(--color-border-tertiary)}
+.tab{flex:1;padding:8px 4px;font-size:12px;text-align:center;cursor:pointer;color:var(--color-text-secondary);border:none;background:transparent;font-family:var(--font-mono);border-bottom:2px solid transparent}
+.tab.active{color:var(--color-text-primary);border-bottom-color:var(--color-text-primary)}
+.panel{display:none;padding:10px}
+.panel.active{display:block}
+.btn-grid{display:grid;gap:5px}
+.btn-grid.cols5{grid-template-columns:repeat(5,1fr)}
+.btn-grid.cols4{grid-template-columns:repeat(4,1fr)}
+.btn-grid.cols3{grid-template-columns:repeat(3,1fr)}
+.btn-grid.cols2{grid-template-columns:repeat(2,1fr)}
+button.k{padding:10px 4px;font-size:13px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);cursor:pointer;font-family:var(--font-mono);transition:background 0.1s}
+button.k:active{background:var(--color-background-secondary)}
+button.k.op{color:var(--color-text-info)}
+button.k.fn{font-size:11px;color:var(--color-text-secondary)}
+button.k.accent{background:var(--color-background-info);color:var(--color-text-info);border-color:var(--color-border-info)}
+button.k.eq{background:var(--color-background-success);color:var(--color-text-success);border-color:var(--color-border-success)}
+button.k.danger{color:var(--color-text-danger)}
+.section-label{font-size:11px;color:var(--color-text-tertiary);margin:8px 0 4px;padding-left:2px}
+.conv-row{display:grid;grid-template-columns:1fr 80px 1fr 80px;gap:6px;align-items:center;margin-bottom:8px}
+.conv-row input{padding:7px 8px;font-size:13px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-family:var(--font-mono);width:100%}
+.conv-row select{padding:7px 4px;font-size:12px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-family:var(--font-mono);width:100%}
+.arrow{text-align:center;color:var(--color-text-secondary);font-size:14px}
+</style>
+
+<div class="calc-wrap">
+  <div class="display-area">
+    <div class="mode-row">
+      <button class="mode-btn active" onclick="setAngle('deg')" id="btn-deg">DEG</button>
+      <button class="mode-btn" onclick="setAngle('rad')" id="btn-rad">RAD</button>
+      <button class="mode-btn" onclick="setAngle('grad')" id="btn-grad">GRAD</button>
+      <button class="mode-btn" onclick="toggleShift()" id="btn-shift">2nd</button>
+    </div>
+    <div class="expr-line" id="expr"></div>
+    <div class="result-line" id="result">0</div>
+    <div class="unit-line" id="unit-line"></div>
+    <div class="history-row" id="history"></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('basic')">Basic</button>
+    <button class="tab" onclick="showTab('sci')">Scientific</button>
+    <button class="tab" onclick="showTab('eng')">Engineering</button>
+    <button class="tab" onclick="showTab('conv')">Convert</button>
+  </div>
+
+  <div class="panel active" id="tab-basic">
+    <div class="btn-grid cols5" style="margin-bottom:5px">
+      <button class="k fn" onclick="inputFn('Math.floor(',')')">floor</button>
+      <button class="k fn" onclick="inputFn('Math.ceil(',')')">ceil</button>
+      <button class="k fn" onclick="inputFn('Math.abs(',')')">|x|</button>
+      <button class="k fn danger" onclick="clearAll()">AC</button>
+      <button class="k fn danger" onclick="backspace()">⌫</button>
+    </div>
+    <div class="btn-grid cols4" style="margin-bottom:5px">
+      <button class="k fn" onclick="inp('(')">(</button>
+      <button class="k fn" onclick="inp(')')">)</button>
+      <button class="k fn" onclick="inp('%')">%</button>
+      <button class="k op" onclick="inp('/')">÷</button>
+    </div>
+    <div class="btn-grid cols4" style="margin-bottom:5px">
+      <button class="k" onclick="inp('7')">7</button>
+      <button class="k" onclick="inp('8')">8</button>
+      <button class="k" onclick="inp('9')">9</button>
+      <button class="k op" onclick="inp('*')">×</button>
+    </div>
+    <div class="btn-grid cols4" style="margin-bottom:5px">
+      <button class="k" onclick="inp('4')">4</button>
+      <button class="k" onclick="inp('5')">5</button>
+      <button class="k" onclick="inp('6')">6</button>
+      <button class="k op" onclick="inp('-')">−</button>
+    </div>
+    <div class="btn-grid cols4" style="margin-bottom:5px">
+      <button class="k" onclick="inp('1')">1</button>
+      <button class="k" onclick="inp('2')">2</button>
+      <button class="k" onclick="inp('3')">3</button>
+      <button class="k op" onclick="inp('+')">+</button>
+    </div>
+    <div class="btn-grid cols4">
+      <button class="k" onclick="inp('0')">0</button>
+      <button class="k" onclick="inp('.')">.</button>
+      <button class="k fn" onclick="inp('**2')">x²</button>
+      <button class="k eq" onclick="calculate()">=</button>
+    </div>
+  </div>
+
+  <div class="panel" id="tab-sci">
+    <div class="btn-grid cols5" style="margin-bottom:5px">
+      <button class="k fn" onclick="inpShift('Math.sin(','Math.asin(',')')">sin</button>
+      <button class="k fn" onclick="inpShift('Math.cos(','Math.acos(',')')">cos</button>
+      <button class="k fn" onclick="inpShift('Math.tan(','Math.atan(',')')">tan</button>
+      <button class="k fn" onclick="inpShift('Math.sinh(','Math.asinh(',')')">sinh</button>
+      <button class="k fn" onclick="inpShift('Math.cosh(','Math.acosh(',')')">cosh</button>
+    </div>
+    <div class="btn-grid cols5" style="margin-bottom:5px">
+      <button class="k fn" onclick="inputFn('Math.log10(',')')">log</button>
+      <button class="k fn" onclick="inputFn('Math.log(',')')">ln</button>
+      <button class="k fn" onclick="inputFn('Math.log2(',')')">log₂</button>
+      <button class="k fn" onclick="inputFn('Math.exp(',')')">eˣ</button>
+      <button class="k fn" onclick="inputFn('Math.sqrt(',')')">√x</button>
+    </div>
+    <div class="btn-grid cols5" style="margin-bottom:5px">
+      <button class="k fn" onclick="inp('**')">xʸ</button>
+      <button class="k fn" onclick="inp('**(1/')">ʸ√x</button>
+      <button class="k fn" onclick="inputFn('nCr(',')')">nCr</button>
+      <button class="k fn" onclick="inputFn('nPr(',')')">nPr</button>
+      <button class="k fn" onclick="inputFn('fact(',')')">n!</button>
+    </div>
+    <div class="btn-grid cols5" style="margin-bottom:5px">
+      <button class="k fn accent" onclick="inp('Math.PI')">π</button>
+      <button class="k fn accent" onclick="inp('Math.E')">e</button>
+      <button class="k fn accent" onclick="inp('ANS')">ANS</button>
+      <button class="k fn danger" onclick="clearAll()">AC</button>
+      <button class="k fn danger" onclick="backspace()">⌫</button>
+    </div>
+    <div class="btn-grid cols4" style="margin-bottom:5px">
+      <button class="k fn" onclick="inp('(')">(</button>
+      <button class="k fn" onclick="inp(')')">)</button>
+      <button class="k fn" onclick="inp('%')">%</button>
+      <button class="k op" onclick="inp('/')">÷</button>
+    </div>
+    <div class="btn-grid cols4" style="margin-bottom:5px">
+      <button class="k" onclick="inp('7')">7</button>
+      <button class="k" onclick="inp('8')">8</button>
+      <button class="k" onclick="inp('9')">9</button>
+      <button class="k op" onclick="inp('*')">×</button>
+    </div>
+    <div class="btn-grid cols4" style="margin-bottom:5px">
+      <button class="k" onclick="inp('4')">4</button>
+      <button class="k" onclick="inp('5')">5</button>
+      <button class="k" onclick="inp('6')">6</button>
+      <button class="k op" onclick="inp('-')">−</button>
+    </div>
+    <div class="btn-grid cols4" style="margin-bottom:5px">
+      <button class="k" onclick="inp('1')">1</button>
+      <button class="k" onclick="inp('2')">2</button>
+      <button class="k" onclick="inp('3')">3</button>
+      <button class="k op" onclick="inp('+')">+</button>
+    </div>
+    <div class="btn-grid cols4">
+      <button class="k" onclick="inp('0')">0</button>
+      <button class="k" onclick="inp('.')">.</button>
+      <button class="k fn" onclick="inp('**2')">x²</button>
+      <button class="k eq" onclick="calculate()">=</button>
+    </div>
+  </div>
+
+  <div class="panel" id="tab-eng">
+    <div class="section-label">electrical</div>
+    <div class="btn-grid cols3" style="margin-bottom:6px">
+      <button class="k fn" onclick="solveOhm()">Ohm's law</button>
+      <button class="k fn" onclick="solvePower()">Power (P=IV)</button>
+      <button class="k fn" onclick="solveRC()">RC time τ</button>
+    </div>
+    <div class="section-label">mechanics</div>
+    <div class="btn-grid cols3" style="margin-bottom:6px">
+      <button class="k fn" onclick="solveKE()">KE = ½mv²</button>
+      <button class="k fn" onclick="solvePE()">PE = mgh</button>
+      <button class="k fn" onclick="solveTorque()">Torque τ=Fr</button>
+    </div>
+    <div class="section-label">constants</div>
+    <div class="btn-grid cols3" style="margin-bottom:6px">
+      <button class="k fn accent" onclick="inp('9.80665')">g (m/s²)</button>
+      <button class="k fn accent" onclick="inp('299792458')">c (m/s)</button>
+      <button class="k fn accent" onclick="inp('6.674e-11')">G</button>
+    </div>
+    <div class="btn-grid cols3" style="margin-bottom:6px">
+      <button class="k fn accent" onclick="inp('1.380649e-23')">k_B</button>
+      <button class="k fn accent" onclick="inp('6.02214076e23')">Nₐ</button>
+      <button class="k fn accent" onclick="inp('8.314')">R (J/mol·K)</button>
+    </div>
+    <div class="section-label">engineering notation</div>
+    <div class="btn-grid cols5">
+      <button class="k fn" onclick="inp('1e-12')">p (pico)</button>
+      <button class="k fn" onclick="inp('1e-9')">n (nano)</button>
+      <button class="k fn" onclick="inp('1e-6')">µ (micro)</button>
+      <button class="k fn" onclick="inp('1e-3')">m (milli)</button>
+      <button class="k fn" onclick="inp('1e3')">k (kilo)</button>
+    </div>
+    <div class="btn-grid cols4" style="margin-top:5px">
+      <button class="k fn" onclick="inp('1e6')">M (mega)</button>
+      <button class="k fn" onclick="inp('1e9')">G (giga)</button>
+      <button class="k fn" onclick="inp('1e12')">T (tera)</button>
+      <button class="k fn danger" onclick="clearAll()">AC</button>
+    </div>
+    <div id="eng-solver" style="margin-top:10px;padding:10px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);display:none"></div>
+  </div>
+
+  <div class="panel" id="tab-conv">
+    <div class="section-label">length</div>
+    <div class="conv-row">
+      <input type="number" id="c-len-a" oninput="convert('len')" placeholder="value">
+      <select id="c-len-ua" onchange="convert('len')">
+        <option value="1">m</option><option value="1000">km</option>
+        <option value="0.001">mm</option><option value="0.0254">in</option>
+        <option value="0.3048">ft</option><option value="1609.34">mi</option>
+      </select>
+      <input type="number" id="c-len-b" oninput="convertBack('len')" placeholder="result">
+      <select id="c-len-ub" onchange="convert('len')">
+        <option value="0.0254">in</option><option value="0.3048">ft</option>
+        <option value="1">m</option><option value="1000">km</option>
+        <option value="1609.34">mi</option><option value="0.001">mm</option>
+      </select>
+    </div>
+    <div class="section-label">mass</div>
+    <div class="conv-row">
+      <input type="number" id="c-mass-a" oninput="convert('mass')" placeholder="value">
+      <select id="c-mass-ua" onchange="convert('mass')">
+        <option value="1">kg</option><option value="0.001">g</option>
+        <option value="0.453592">lb</option><option value="1000">t</option>
+      </select>
+      <input type="number" id="c-mass-b" oninput="convertBack('mass')" placeholder="result">
+      <select id="c-mass-ub" onchange="convert('mass')">
+        <option value="0.453592">lb</option><option value="1">kg</option>
+        <option value="0.001">g</option><option value="1000">t</option>
+      </select>
+    </div>
+    <div class="section-label">temperature</div>
+    <div class="conv-row">
+      <input type="number" id="c-temp-a" oninput="convertTemp()" placeholder="value">
+      <select id="c-temp-ua" onchange="convertTemp()">
+        <option>°C</option><option>°F</option><option>K</option>
+      </select>
+      <input type="number" id="c-temp-b" readonly placeholder="result">
+      <select id="c-temp-ub" onchange="convertTemp()">
+        <option>°F</option><option>K</option><option>°C</option>
+      </select>
+    </div>
+    <div class="section-label">pressure</div>
+    <div class="conv-row">
+      <input type="number" id="c-pres-a" oninput="convert('pres')" placeholder="value">
+      <select id="c-pres-ua" onchange="convert('pres')">
+        <option value="1">Pa</option><option value="1000">kPa</option>
+        <option value="101325">atm</option><option value="6894.76">psi</option><option value="100000">bar</option>
+      </select>
+      <input type="number" id="c-pres-b" oninput="convertBack('pres')" placeholder="result">
+      <select id="c-pres-ub" onchange="convert('pres')">
+        <option value="6894.76">psi</option><option value="101325">atm</option>
+        <option value="1">Pa</option><option value="1000">kPa</option><option value="100000">bar</option>
+      </select>
+    </div>
+    <div class="section-label">energy</div>
+    <div class="conv-row">
+      <input type="number" id="c-ener-a" oninput="convert('ener')" placeholder="value">
+      <select id="c-ener-ua" onchange="convert('ener')">
+        <option value="1">J</option><option value="1000">kJ</option>
+        <option value="4.184">cal</option><option value="3600000">kWh</option><option value="1055.06">BTU</option>
+      </select>
+      <input type="number" id="c-ener-b" oninput="convertBack('ener')" placeholder="result">
+      <select id="c-ener-ub" onchange="convert('ener')">
+        <option value="4.184">cal</option><option value="1">J</option>
+        <option value="1000">kJ</option><option value="3600000">kWh</option><option value="1055.06">BTU</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<script>
+let expr = '';
+let ans = 0;
+let angleMode = 'deg';
+let shifted = false;
+let history = [];
+
+function toRad(x){
+  if(angleMode==='deg') return x*Math.PI/180;
+  if(angleMode==='grad') return x*Math.PI/200;
+  return x;
+}
+function fromRad(x){
+  if(angleMode==='deg') return x*180/Math.PI;
+  if(angleMode==='grad') return x*200/Math.PI;
+  return x;
+}
+function fact(n){if(n<0||!Number.isInteger(n))return NaN;if(n===0)return 1;let r=1;for(let i=2;i<=n;i++)r*=i;return r;}
+function nCr(n,r){return fact(n)/(fact(r)*fact(n-r));}
+function nPr(n,r){return fact(n)/fact(n-r);}
+
+const wrapTrig = (fn)=>(...a)=>fn(...a.map(toRad));
+const wrapATrig = (fn)=>(...a)=>fromRad(fn(...a));
+
+const origSin=Math.sin,origCos=Math.cos,origTan=Math.tan;
+const origASin=Math.asin,origACos=Math.acos,origATan=Math.atan,origATan2=Math.atan2;
+
+function inp(v){
+  if(expr==='Error')expr='';
+  expr+=v;
+  render();
+}
+function inputFn(open,close){
+  if(expr==='Error')expr='';
+  expr+=open;
+  render();
+  pendingClose=close;
+}
+let pendingClose='';
+function inpShift(norm,inv,close){
+  if(expr==='Error')expr='';
+  expr+=(shifted?inv:norm);
+  render();
+}
+function clearAll(){expr='';document.getElementById('result').textContent='0';document.getElementById('expr').textContent='';document.getElementById('unit-line').textContent='';render();}
+function backspace(){expr=expr.slice(0,-1);render();}
+function render(){document.getElementById('expr').textContent=expr.replace(/Math\./g,'').replace(/\*\*/g,'^').replace(/\*/g,'×').replace(/\//g,'÷');}
+
+function calculate(){
+  try{
+    let e=expr.replace(/ANS/g,String(ans));
+    const s={
+      sin:(...a)=>origSin(toRad(...a)),
+      cos:(...a)=>origCos(toRad(...a)),
+      tan:(...a)=>origTan(toRad(...a)),
+      asin:(...a)=>fromRad(origASin(...a)),
+      acos:(...a)=>fromRad(origACos(...a)),
+      atan:(...a)=>fromRad(origATan(...a)),
+      sinh:Math.sinh,cosh:Math.cosh,tanh:Math.tanh,
+      asinh:Math.asinh,acosh:Math.acosh,atanh:Math.atanh,
+      log10:Math.log10,log:Math.log,log2:Math.log2,
+      exp:Math.exp,sqrt:Math.sqrt,abs:Math.abs,
+      floor:Math.floor,ceil:Math.ceil,
+      PI:Math.PI,E:Math.E,
+      fact,nCr,nPr
+    };
+    let fn=new Function(...Object.keys(s),'return ('+e.replace(/Math\./g,'')+')');
+    let res=fn(...Object.values(s));
+    if(typeof res!=='number'||isNaN(res)){document.getElementById('result').textContent='Error';return;}
+    history.unshift(expr+'='+fmtNum(res));
+    if(history.length>3)history.pop();
+    document.getElementById('history').textContent=history.slice(1).join('  |  ');
+    ans=res;
+    expr='';
+    document.getElementById('expr').textContent='';
+    document.getElementById('result').textContent=fmtNum(res);
+    document.getElementById('unit-line').textContent='';
+  }catch(err){document.getElementById('result').textContent='Error';}
+}
+
+function fmtNum(n){
+  if(Math.abs(n)>=1e15||( Math.abs(n)<1e-9&&n!==0))return n.toExponential(6);
+  let s=parseFloat(n.toPrecision(10));
+  return String(s);
+}
+
+function setAngle(m){
+  angleMode=m;
+  ['deg','rad','grad'].forEach(x=>document.getElementById('btn-'+x).classList.remove('active'));
+  document.getElementById('btn-'+m).classList.add('active');
+}
+function toggleShift(){
+  shifted=!shifted;
+  document.getElementById('btn-shift').classList.toggle('active',shifted);
+}
+function showTab(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function showSolver(html){
+  const d=document.getElementById('eng-solver');
+  d.style.display='block';
+  d.innerHTML=html;
+}
+function solverRow(label,id){
+  return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><label style="font-size:12px;color:var(--color-text-secondary);width:80px">${label}</label><input id="${id}" type="number" placeholder="?" style="flex:1;padding:5px 8px;font-size:13px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-family:var(--font-mono)"></div>`;
+}
+function solveOhm(){
+  showSolver(`<div style="font-size:12px;font-weight:500;color:var(--color-text-primary);margin-bottom:8px">Ohm's law — leave one field blank</div>`+
+    solverRow('V (volts)','ohm-v')+solverRow('I (amps)','ohm-i')+solverRow('R (ohms)','ohm-r')+
+    `<button class="k fn" style="width:100%;margin-top:4px" onclick="calcOhm()">Solve</button><div id="ohm-out" style="font-size:13px;color:var(--color-text-info);margin-top:8px"></div>`);
+}
+function calcOhm(){
+  let v=document.getElementById('ohm-v').value;
+  let i=document.getElementById('ohm-i').value;
+  let r=document.getElementById('ohm-r').value;
+  let out='';
+  if(!v&&i&&r){out='V = '+parseFloat((i*r).toPrecision(6))+' V';}
+  else if(v&&!i&&r){out='I = '+parseFloat((v/r).toPrecision(6))+' A';}
+  else if(v&&i&&!r){out='R = '+parseFloat((v/i).toPrecision(6))+' Ω';}
+  else{out='Fill exactly two fields.';}
+  document.getElementById('ohm-out').textContent=out;
+}
+function solvePower(){
+  showSolver(`<div style="font-size:12px;font-weight:500;color:var(--color-text-primary);margin-bottom:8px">Power — leave one field blank</div>`+
+    solverRow('P (watts)','pw-p')+solverRow('I (amps)','pw-i')+solverRow('V (volts)','pw-v')+
+    `<button class="k fn" style="width:100%;margin-top:4px" onclick="calcPower()">Solve</button><div id="pw-out" style="font-size:13px;color:var(--color-text-info);margin-top:8px"></div>`);
+}
+function calcPower(){
+  let p=document.getElementById('pw-p').value;
+  let i=document.getElementById('pw-i').value;
+  let v=document.getElementById('pw-v').value;
+  let out='';
+  if(!p&&i&&v){out='P = '+parseFloat((i*v).toPrecision(6))+' W';}
+  else if(p&&!i&&v){out='I = '+parseFloat((p/v).toPrecision(6))+' A';}
+  else if(p&&i&&!v){out='V = '+parseFloat((p/i).toPrecision(6))+' V';}
+  else{out='Fill exactly two fields.';}
+  document.getElementById('pw-out').textContent=out;
+}
+function solveRC(){
+  showSolver(`<div style="font-size:12px;font-weight:500;color:var(--color-text-primary);margin-bottom:8px">RC time constant τ = R × C</div>`+
+    solverRow('R (Ω)','rc-r')+solverRow('C (F)','rc-c')+
+    `<button class="k fn" style="width:100%;margin-top:4px" onclick="calcRC()">Solve</button><div id="rc-out" style="font-size:13px;color:var(--color-text-info);margin-top:8px"></div>`);
+}
+function calcRC(){
+  let r=parseFloat(document.getElementById('rc-r').value);
+  let c=parseFloat(document.getElementById('rc-c').value);
+  if(r&&c){document.getElementById('rc-out').textContent='τ = '+parseFloat((r*c).toPrecision(6))+' s  |  5τ = '+parseFloat((5*r*c).toPrecision(6))+' s';}
+  else{document.getElementById('rc-out').textContent='Enter R and C.';}
+}
+function solveKE(){
+  showSolver(`<div style="font-size:12px;font-weight:500;color:var(--color-text-primary);margin-bottom:8px">Kinetic energy KE = ½mv²</div>`+
+    solverRow('m (kg)','ke-m')+solverRow('v (m/s)','ke-v')+
+    `<button class="k fn" style="width:100%;margin-top:4px" onclick="calcKE()">Solve</button><div id="ke-out" style="font-size:13px;color:var(--color-text-info);margin-top:8px"></div>`);
+}
+function calcKE(){
+  let m=parseFloat(document.getElementById('ke-m').value);
+  let v=parseFloat(document.getElementById('ke-v').value);
+  if(m&&v){document.getElementById('ke-out').textContent='KE = '+parseFloat((0.5*m*v*v).toPrecision(6))+' J';}
+  else{document.getElementById('ke-out').textContent='Enter m and v.';}
+}
+function solvePE(){
+  showSolver(`<div style="font-size:12px;font-weight:500;color:var(--color-text-primary);margin-bottom:8px">Potential energy PE = mgh</div>`+
+    solverRow('m (kg)','pe-m')+solverRow('g (m/s²)','pe-g')+solverRow('h (m)','pe-h')+
+    `<button class="k fn" style="width:100%;margin-top:4px" onclick="calcPE()">Solve</button><div id="pe-out" style="font-size:13px;color:var(--color-text-info);margin-top:8px"></div>`);
+}
+function calcPE(){
+  let m=parseFloat(document.getElementById('pe-m').value);
+  let g=parseFloat(document.getElementById('pe-g').value)||9.80665;
+  let h=parseFloat(document.getElementById('pe-h').value);
+  if(m&&h){document.getElementById('pe-out').textContent='PE = '+parseFloat((m*g*h).toPrecision(6))+' J';}
+  else{document.getElementById('pe-out').textContent='Enter m and h (g defaults to 9.80665).';}
+}
+function solveTorque(){
+  showSolver(`<div style="font-size:12px;font-weight:500;color:var(--color-text-primary);margin-bottom:8px">Torque τ = F × r</div>`+
+    solverRow('F (N)','tq-f')+solverRow('r (m)','tq-r')+
+    `<button class="k fn" style="width:100%;margin-top:4px" onclick="calcTorque()">Solve</button><div id="tq-out" style="font-size:13px;color:var(--color-text-info);margin-top:8px"></div>`);
+}
+function calcTorque(){
+  let f=parseFloat(document.getElementById('tq-f').value);
+  let r=parseFloat(document.getElementById('tq-r').value);
+  if(f&&r){document.getElementById('tq-out').textContent='τ = '+parseFloat((f*r).toPrecision(6))+' N·m';}
+  else{document.getElementById('tq-out').textContent='Enter F and r.';}
+}
+
+function convert(type){
+  let a=parseFloat(document.getElementById('c-'+type+'-a').value);
+  let ua=parseFloat(document.getElementById('c-'+type+'-ua').value);
+  let ub=parseFloat(document.getElementById('c-'+type+'-ub').value);
+  if(!isNaN(a)){
+    let res=parseFloat(((a*ua)/ub).toPrecision(8));
+    document.getElementById('c-'+type+'-b').value=res;
+  }
+}
+function convertBack(type){
+  let b=parseFloat(document.getElementById('c-'+type+'-b').value);
+  let ua=parseFloat(document.getElementById('c-'+type+'-ua').value);
+  let ub=parseFloat(document.getElementById('c-'+type+'-ub').value);
+  if(!isNaN(b)){
+    let res=parseFloat(((b*ub)/ua).toPrecision(8));
+    document.getElementById('c-'+type+'-a').value=res;
+  }
+}
+function convertTemp(){
+  let a=parseFloat(document.getElementById('c-temp-a').value);
+  let ua=document.getElementById('c-temp-ua').value;
+  let ub=document.getElementById('c-temp-ub').value;
+  if(isNaN(a))return;
+  let celsius;
+  if(ua==='°C')celsius=a;
+  else if(ua==='°F')celsius=(a-32)/1.8;
+  else celsius=a-273.15;
+  let res;
+  if(ub==='°C')res=celsius;
+  else if(ub==='°F')res=celsius*1.8+32;
+  else res=celsius+273.15;
+  document.getElementById('c-temp-b').value=parseFloat(res.toPrecision(7));
+}
+
+document.addEventListener('keydown',function(e){
+  if(e.key>='0'&&e.key<='9')inp(e.key);
+  else if(e.key==='+')inp('+');
+  else if(e.key==='-')inp('-');
+  else if(e.key==='*')inp('*');
+  else if(e.key==='/')inp('/');
+  else if(e.key==='.')inp('.');
+  else if(e.key==='('||e.key===')')inp(e.key);
+  else if(e.key==='Enter'||e.key==='=')calculate();
+  else if(e.key==='Backspace')backspace();
+  else if(e.key==='Escape')clearAll();
+});
+</script>
